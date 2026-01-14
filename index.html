@@ -2,203 +2,189 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>미스테리 정원: 사람을 구하라!</title>
+    <title>농작물 사회 타이쿤: 6인의 대가족</title>
     <style>
-        :root { --progress-color: #ffcc00; }
-        body { 
-            background: #1a1a2e; color: white; text-align: center; 
-            font-family: 'Courier New', Courier, monospace; margin: 0; overflow: hidden;
+        :root { --accent: #fbbf24; --success: #4ade80; --love: #f472b6; --bg: #0f172a; }
+        body { background: var(--bg); color: white; font-family: 'Pretendard', sans-serif; text-align: center; margin: 0; padding-bottom: 120px; }
+        
+        #header { padding: 15px; background: rgba(0,0,0,0.4); border-bottom: 1px solid #334155; }
+        
+        /* 6개 밭 그리드 설정 (3개씩 2줄) */
+        #field { 
+            display: grid; 
+            grid-template-columns: repeat(3, 220px); 
+            justify-content: center; 
+            gap: 20px; 
+            padding: 30px; 
+        }
+        
+        .pot { 
+            width: 220px; height: 260px; background: #1e293b; border-radius: 25px;
+            position: relative; border: 3px solid #334155; transition: 0.3s; cursor: pointer;
+        }
+        .pot:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .pot.married { border-color: var(--love); box-shadow: 0 0 15px var(--love); }
+
+        /* 캐릭터 및 말풍선 */
+        .crop { font-size: 60px; position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); }
+        .bubble { 
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 4px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: bold; display: none; z-index: 10; width: 120px;
         }
 
-        /* 시각적 상단 게이지 */
-        #top-ui { width: 100%; padding: 20px; background: rgba(0,0,0,0.5); }
-        .gauge-container { width: 300px; height: 20px; background: #333; border: 2px solid #fff; margin: 5px auto; border-radius: 10px; position: relative; }
-        .gauge-fill { height: 100%; background: var(--progress-color); width: 100%; transition: width 0.1s linear; }
-        .day-text { font-weight: bold; color: #00d2ff; }
+        /* 게이지 바 */
+        .stats { position: absolute; bottom: 15px; width: 85%; left: 7.5%; }
+        .bar { height: 5px; background: #000; border-radius: 3px; margin: 3px 0; overflow: hidden; }
+        .fill { height: 100%; width: 0%; transition: 0.3s; }
 
-        /* 게임 필드 */
-        #field { display: flex; justify-content: center; gap: 50px; margin-top: 50px; }
-        .pit { 
-            width: 200px; height: 300px; background: #16213e; border: 4px solid #0f3460;
-            border-radius: 50% 50% 10% 10%; position: relative; cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .pit:hover { transform: scale(1.02); }
-
-        /* 사람(캐릭터) 시각화 */
-        .character { font-size: 80px; position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); transition: all 0.5s; }
-        .ghost { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 50px; display: none; z-index: 10; animation: float 1s infinite; }
-        @keyframes float { 0% { top: -20px; } 50% { top: -40px; } 100% { top: -20px; } }
-
-        /* 상태 바 (아이콘 기반) */
-        .stat-bars { position: absolute; bottom: -80px; width: 100%; font-size: 12px; }
-        .mini-bar { height: 8px; background: #444; margin: 4px 0; border-radius: 4px; overflow: hidden; }
-        .fill { height: 100%; transition: width 0.3s; }
-
-        /* 도구함 */
+        /* 하단 도구함 고정 */
         #inventory { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; background: #0f3460; padding: 15px; border-radius: 20px;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 10px; 
+            background: rgba(15, 23, 42, 0.95); padding: 15px; 
+            border-top: 2px solid #334155; backdrop-filter: blur(10px);
         }
         .tool { 
-            width: 60px; height: 60px; background: #e94560; border: none; border-radius: 10px;
-            font-size: 30px; cursor: pointer; transition: 0.2s;
+            width: 65px; height: 80px; background: #334155; border: none; border-radius: 12px;
+            color: white; cursor: pointer; transition: 0.2s;
         }
-        .tool:hover { background: #ff2e63; transform: translateY(-5px); }
-        .tool.active { border: 3px solid white; box-shadow: 0 0 15px white; }
-
-        /* 커서 설정 */
-        body.c-shovel { cursor: crosshair; }
+        .tool.active { background: var(--accent); transform: scale(1.1); box-shadow: 0 0 10px var(--accent); }
+        .tool-icon { font-size: 20px; display: block; }
+        .tool-name { font-size: 10px; margin-top: 4px; opacity: 0.8; }
     </style>
 </head>
-<body class="c-default">
+<body>
 
-    <div id="top-ui">
-        <div>시간 게이지</div>
-        <div class="gauge-container"><div id="time-fill" class="gauge-fill"></div></div>
-        <div class="day-text">진행도: <span id="day-num">1</span> / 30 DAY</div>
+<div id="header">
+    <h2 style="margin:0;">🌿 농작물 대가족 사회 🌿</h2>
+    <p style="font-size:13px; color:#94a3b8; margin:5px 0 0;">개간(⛏️) -> 씨앗(🌱) -> 비료(💧)/교육(📚) -> 취업(💼) -> 결혼(💍)</p>
+</div>
+
+<div id="field">
     </div>
 
-    <div id="field">
-        <div class="pit" onclick="interact(0)">
-            <div id="ghost-0" class="ghost">👻</div>
-            <div id="char-0" class="character">🕳️</div>
-            <div class="stat-bars">
-                밥: <div class="mini-bar"><div id="water-bar-0" class="fill" style="background: #4cc9f0; width: 0%"></div></div>
-                기운: <div class="mini-bar"><div id="weed-bar-0" class="fill" style="background: #4ade80; width: 0%"></div></div>
-                정신: <div class="mini-bar"><div id="pest-bar-0" class="fill" style="background: #f72585; width: 0%"></div></div>
+<div id="inventory">
+    <button class="tool" onclick="selectTool('shovel', this)"><span class="tool-icon">⛏️</span><span class="tool-name">개간</span></button>
+    <button class="tool" onclick="selectTool('seed', this)"><span class="tool-icon">🌱</span><span class="tool-name">파종</span></button>
+    <button class="tool" onclick="selectTool('water', this)"><span class="tool-icon">💧</span><span class="tool-name">비료</span></button>
+    <button class="tool" onclick="selectTool('study', this)"><span class="tool-icon">📚</span><span class="tool-name">교육</span></button>
+    <button class="tool" onclick="selectTool('job', this)"><span class="tool-icon">💼</span><span class="tool-name">취업</span></button>
+    <button class="tool" onclick="selectTool('ring', this)"><span class="tool-icon">💍</span><span class="tool-name">결혼</span></button>
+    <button class="tool" onclick="selectTool('heal', this)"><span class="tool-icon">❤️</span><span class="tool-name">구조</span></button>
+</div>
+
+<script>
+    let selectedTool = null;
+    const cropCount = 6;
+    const crops = [];
+
+    // 초기 데이터 설정
+    for(let i=0; i<cropCount; i++) {
+        crops.push({ stage: 0, food: 0, study: 0, job: false, married: false, dead: false });
+    }
+
+    // 필드 생성
+    const fieldEl = document.getElementById('field');
+    crops.forEach((_, i) => {
+        fieldEl.innerHTML += `
+            <div class="pot" id="pot-${i}" onclick="interact(${i})">
+                <div id="bubble-${i}" class="bubble"></div>
+                <div id="crop-${i}" class="crop">🕳️</div>
+                <div class="stats">
+                    <div class="bar"><div id="f-${i}-w" class="fill" style="background: #38bdf8;"></div></div>
+                    <div class="bar"><div id="f-${i}-s" class="fill" style="background: #4ade80;"></div></div>
+                    <div class="bar"><div id="f-${i}-j" class="fill" style="background: #fbbf24;"></div></div>
+                </div>
             </div>
-        </div>
-        <div class="pit" onclick="interact(1)">
-            <div id="ghost-1" class="ghost">👻</div>
-            <div id="char-1" class="character">🕳️</div>
-            <div class="stat-bars">
-                밥: <div class="mini-bar"><div id="water-bar-1" class="fill" style="background: #4cc9f0; width: 0%"></div></div>
-                기운: <div class="mini-bar"><div id="weed-bar-1" class="fill" style="background: #4ade80; width: 0%"></div></div>
-                정신: <div class="mini-bar"><div id="pest-bar-1" class="fill" style="background: #f72585; width: 0%"></div></div>
-            </div>
-        </div>
-    </div>
+        `;
+    });
 
-    <div id="inventory">
-        <button class="tool" onclick="setTool('shovel', this)">⛏️</button>
-        <button class="tool" onclick="setTool('seed', this)">🧘</button>
-        <button class="tool" onclick="setTool('water', this)">🍱</button>
-        <button class="tool" onclick="setTool('scissor', this)">✨</button>
-        <button class="tool" onclick="setTool('medicine', this)">💉</button>
-        <button class="tool" onclick="setTool('heal', this)">❤️</button>
-    </div>
+    function selectTool(tool, btn) {
+        selectedTool = tool;
+        document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
 
-    <script>
-        let currentTool = null;
-        let day = 1;
-        let timeLeft = 100; // % 기준
-        let gameActive = true;
+    function interact(idx) {
+        if (!selectedTool) return;
+        let c = crops[idx];
 
-        const players = [
-            { stage: 0, water: 0, weed: 0, pest: 0, dead: false, ghostActive: false },
-            { stage: 0, water: 0, weed: 0, pest: 0, dead: false, ghostActive: false }
-        ];
-
-        // 1. 도구 선택
-        function setTool(tool, btn) {
-            currentTool = tool;
-            document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        if (c.dead && selectedTool !== 'heal') {
+            msg(idx, "무지개 다리.. 🌈");
+            return;
         }
 
-        // 2. 상호작용 (이미지의 규칙 적용)
-        function interact(idx) {
-            if (!currentTool || !gameActive) return;
-            let p = players[idx];
-
-            if (p.dead && currentTool !== 'heal') return alert("이미 영혼이 떠났습니다. 회복제가 필요합니다.");
-
-            switch(currentTool) {
-                case 'shovel': if(p.stage === 0) p.stage = 1; break;
-                case 'seed': if(p.stage === 1) p.stage = 2; break;
-                case 'water': if(p.stage === 2 && p.water < 6) p.water++; break;
-                case 'scissor': if(p.stage === 2 && p.weed < 2) p.weed++; break;
-                case 'medicine': 
-                    if(p.stage === 2 && p.pest < 4) {
-                        p.pest++;
-                        if(p.ghostActive && p.pest >= 4) { // 해충(악령) 퇴치
-                            p.ghostActive = false;
-                            document.getElementById(`ghost-${idx}`).style.display = 'none';
-                        }
-                    }
-                    break;
-                case 'heal': 
-                    if(p.dead) { p.dead = false; p.stage = 0; p.water = 0; p.weed = 0; p.pest = 0; }
-                    break;
-            }
-            updateDisplay();
-        }
-
-        // 3. 랜덤 해충(악령) 발생 시스템
-        function triggerRandomEvent() {
-            if (!gameActive) return;
-            let target = Math.floor(Math.random() * 2);
-            let p = players[target];
-
-            if (p.stage === 2 && !p.dead && !p.ghostActive) {
-                p.ghostActive = true;
-                p.pest = 0; // 해충 게이지 초기화 (다시 4번 눌러야 함)
-                document.getElementById(`ghost-${target}`).style.display = 'block';
-                
-                // 5초 안에 안 쫓아내면 사망 위험
-                setTimeout(() => {
-                    if (p.ghostActive && !p.dead) {
-                        p.dead = true;
-                        updateDisplay();
-                    }
-                }, 5000);
-            }
-            // 다음 이벤트 예약 (랜덤 시간)
-            setTimeout(triggerRandomEvent, Math.random() * 5000 + 2000);
-        }
-
-        // 4. 화면 업데이트
-        function updateDisplay() {
-            players.forEach((p, i) => {
-                const charEl = document.getElementById(`char-${i}`);
-                if (p.dead) charEl.innerText = "👻";
-                else if (p.stage === 0) charEl.innerText = "🕳️";
-                else if (p.stage === 1) charEl.innerText = "🏗️";
-                else if (p.stage === 2) charEl.innerText = "🧍";
-                else if (p.stage === 3) charEl.innerText = "🤴";
-
-                if (p.water >= 6 && p.weed >= 2 && p.pest >= 4) {
-                    p.stage = 3;
-                    charEl.innerText = "🤴";
+        switch(selectedTool) {
+            case 'shovel': if(c.stage === 0) c.stage = 1; break;
+            case 'seed': if(c.stage === 1) c.stage = 2; break;
+            case 'water': if(c.stage === 2 && c.food < 6) c.food++; break;
+            case 'study': if(c.stage === 2 && c.study < 2) c.study++; break;
+            case 'job': 
+                if(c.stage === 2 && !c.job) {
+                    if(c.food >= 6 && c.study >= 2) { c.job = true; msg(idx, "첫 출근! 💼"); }
+                    else msg(idx, "스펙이 부족해..!");
                 }
-
-                document.getElementById(`water-bar-${i}`).style.width = (p.water / 6 * 100) + "%";
-                document.getElementById(`weed-bar-${i}`).style.width = (p.weed / 2 * 100) + "%";
-                document.getElementById(`pest-bar-${i}`).style.width = (p.pest / 4 * 100) + "%";
-            });
+                break;
+            case 'ring':
+                if(c.job && !c.married) {
+                    // 옆에 취업한 솔로 농작물이 있는지 확인
+                    let partnerIdx = crops.findIndex((p, pi) => pi !== idx && p.job && !p.married);
+                    if(partnerIdx !== -1) {
+                        c.married = true;
+                        crops[partnerIdx].married = true;
+                        msg(idx, "결혼했어요! ❤️");
+                        msg(partnerIdx, "나도 결혼! ✨");
+                    } else {
+                        msg(idx, "상대가 없어요 💍");
+                    }
+                } else if(!c.job) msg(idx, "백수는 안돼요!");
+                break;
+            case 'heal':
+                if(c.dead) { c.dead = false; c.stage = 0; c.food = 0; c.study = 0; c.job = false; c.married = false; }
+                break;
         }
+        render();
+    }
 
-        // 5. 메인 타이머 (30일 시스템)
-        setInterval(() => {
-            if (!gameActive) return;
-            timeLeft -= 0.5; // 시간 감소 속도
-            document.getElementById('time-fill').style.width = timeLeft + "%";
+    function msg(idx, text) {
+        const b = document.getElementById(`bubble-${idx}`);
+        b.innerText = text;
+        b.style.display = 'block';
+        setTimeout(() => b.style.display = 'none', 1500);
+    }
 
-            if (timeLeft <= 0) {
-                day++;
-                timeLeft = 100;
-                document.getElementById('day-num').innerText = day;
-                if (day > 30) {
-                    gameActive = false;
-                    alert("30일이 지났습니다. 구조 작전 종료!");
-                }
-            }
-        }, 150);
+    function render() {
+        crops.forEach((c, i) => {
+            const el = document.getElementById(`crop-${i}`);
+            const pot = document.getElementById(`pot-${i}`);
+            
+            if (c.dead) el.innerText = "👻";
+            else if (c.married) el.innerText = "🤵"; 
+            else if (c.job) el.innerText = "💼";   
+            else if (c.stage === 0) el.innerText = "🕳️";
+            else if (c.stage === 1) el.innerText = "🏗️";
+            else if (c.stage === 2) el.innerText = "🌿";
 
-        // 첫 이벤트 시작
-        setTimeout(triggerRandomEvent, 3000);
-        updateDisplay();
-    </script>
+            if (c.married) pot.classList.add('married');
+            else pot.classList.remove('married');
+
+            document.getElementById(`f-${i}-w`).style.width = (c.food / 6 * 100) + "%";
+            document.getElementById(`f-${i}-s`).style.width = (c.study / 2 * 100) + "%";
+            document.getElementById(`f-${i}-j`).style.width = (c.job ? 100 : 0) + "%";
+        });
+    }
+
+    // 랜덤 위기 발생 (해충 대신 '슬럼프')
+    setInterval(() => {
+        let activeCrops = crops.filter(c => c.stage === 2 && !c.dead && !c.married);
+        if(activeCrops.length > 0 && Math.random() > 0.7) {
+            let target = crops.indexOf(activeCrops[Math.floor(Math.random() * activeCrops.length)]);
+            crops[target].dead = true;
+            msg(target, "인생의 쓴맛.. 💀");
+            render();
+        }
+    }, 5000);
+</script>
 </body>
 </html>
