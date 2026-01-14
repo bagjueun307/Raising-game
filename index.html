@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>슈의 비밀정원: 농작물 재배</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f8ff; /* 연한 하늘색 배경 */
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            margin: 0;
+            overflow: hidden; /* 커서 이미지로 인해 스크롤 생기는 것 방지 */
+            cursor: default; /* 기본 커서 */
+        }
+
+        /* 커서 이미지 설정 */
+        body.cursor-shovel { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="orange" d="M13 14H11V6H13M12 2A9 9 0 0 0 3 11V22H21V11A9 9 0 0 0 12 2Z"/></svg>') 15 15, auto; }
+        body.cursor-seed { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="green" d="M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2M12 4C14.75 4 17 6.25 17 9C17 11.75 12 18 12 18S7 11.75 7 9C7 6.25 9.25 4 12 4Z"/></svg>') 15 15, auto; }
+        body.cursor-water { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="blue" d="M12 20C10 20 5 13 5 9C5 5.14 8.14 2 12 2C15.86 2 19 5.14 19 9C19 13 14 20 12 20Z"/></svg>') 15 15, auto; }
+        body.cursor-scissor { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="grey" d="M20 4.47L17.5 7L20 9.53V10.47L17.5 13L20 15.53V16.47L17.5 19L20 21.53V22.47L15.47 18H8.53L4 22.47V21.53L6.5 19L4 16.47V15.53L6.5 13L4 10.47V9.53L6.5 7L4 4.47V3.53L8.53 8H15.47L20 3.53V4.47Z"/></svg>') 15 15, auto; }
+        body.cursor-medicine { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="purple" d="M13 3H11V8H13M12 20A8 8 0 0 0 20 12A8 8 0 0 0 12 4A8 8 0 0 0 4 12A8 8 0 0 0 12 20Z"/></svg>') 15 15, auto; }
+        body.cursor-heal { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="red" d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/></svg>') 15 15, auto; }
+        
+        #game-container {
+            display: flex;
+            gap: 50px; /* 화분 사이 간격 */
+            margin-top: 30px;
+        }
+
+        .plot-wrapper {
+            position: relative;
+            width: 250px;
+            height: 350px;
+            background-color: #8B4513; /* 흙 색상 */
+            border-radius: 15px;
+            border: 5px solid #5A2D0C;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* 식물을 바닥에 붙여서 */
+            align-items: center;
+            cursor: pointer; /* 기본적으로 클릭 가능 */
+            overflow: hidden; /* 식물 이미지가 밖으로 나가지 않게 */
+        }
+
+        .crop-display {
+            font-size: 150px; /* 식물 이모지 크기 */
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        
+        .status-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: left;
+            z-index: 20;
+        }
+
+        .warning-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-weight: bold;
+            font-size: 18px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 30;
+            display: none; /* 기본적으로 숨김 */
+        }
+
+        #item-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+            background-color: #d4e6f1; /* 아이템 바 배경 */
+            padding: 15px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .item-button {
+            width: 70px;
+            height: 70px;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+
+        .item-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .item-button.selected {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px #007bff;
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        #timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #0056b3;
+        }
+
+        #game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            font-weight: bold;
+            z-index: 100;
+            display: none; /* 초기에는 숨김 */
+        }
+        #game-over-screen button {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-display">남은 시간: <span id="time-left">30</span>초 | 날짜: <span id="current-day">1</span>일 / 30일</div>
+
+    <div id="game-container">
+        <div class="plot-wrapper" id="plot-1">
+            <div class="crop-display" id="crop-visual-1"></div>
+            <div class="status-overlay">
+                상태: <span id="status-1">빈 땅</span><br>
+                물: <span id="water-1">0</span>/6<br>
+                잡초: <span id="weed-1">0</span>/2<br>
+                해충: <span id="pest-1">0</span>/4
+            </div>
+            <div class="warning-message" id="warning-1"></div>
+        </div>
+
+        <div class="plot-wrapper" id="plot-2">
+            <div class="crop-display" id="crop-visual-2"></div>
+            <div class="status-overlay">
+                상태: <span id="status-2">빈 땅</span><br>
+                물: <span id="water-2">0</span>/6<br>
+                잡초: <span id="weed-2">0</span>/2<br>
+                해충: <span id="pest-2">0</span>/4
+            </div>
+            <div class="warning-message" id="warning-2"></div>
+        </div>
+    </div>
+
+    <div id="item-bar">
+        <button class="item-button" data-tool="shovel" onclick="selectTool('shovel')">
+            <span role="img" aria-label="삽">⛏️</span>
+        </button>
+        <button class="item-button" data-tool="seed" onclick="selectTool('seed')">
+            <span role="img" aria-label="씨앗">🌱</span>
+        </button>
+        <button class="item-button" data-tool="water" onclick="selectTool('water')">
+            <span role="img" aria-label="물조개">💧</span>
+        </button>
+        <button class="item-button" data-tool="scissor" onclick="selectTool('scissor')">
+            <span role="img" aria-label="가위">✂️</span>
+        </button>
+        <button class="item-button" data-tool="medicine" onclick="selectTool('medicine')">
+            <span role="img" aria-label="해충약">💊</span>
+        </button>
+        <button class="item-button" data-tool="heal" onclick="selectTool('heal')">
+            <span role="img" aria-label="회복제">🩹</span>
+        </button>
+    </div>
+
+    <div id="game-over-screen">
+        <span id="game-result"></span>
+        <button onclick="location.reload()">다시 시작</button>
+    </div>
+
+    <script>
+        // === 게임 설정 ===
+        const TOTAL_DAYS = 30;
+        const DAY_DURATION_SECONDS = 30; // 1일 = 30초
+        const REQUIRED_WATER = 6;
+        const REQUIRED_WEED = 2; // 잡초 제거 횟수
+        const REQUIRED_PEST = 4; // 해충 약 사용 횟수
+
+        // === 게임 변수 ===
+        let currentDay = 1;
+        let timeLeftInDay = DAY_DURATION_SECONDS;
+        let selectedTool = null;
+        let gameInterval;
+        let gameRunning = true;
+
+        // 각 농작물의 상태 데이터
+        const cropPlots = [
+            { id: 1, stage: 0, water: 0, weed: 0, pest: 0, isDead: false, completed: false },
+            { id: 2, stage: 0, water: 0, weed: 0, pest: 0, isDead: false, completed: false }
+        ];
+
+        // === DOM 요소 캐싱 ===
+        const $timeLeft = document.getElementById('time-left');
+        const $currentDay = document.getElementById('current-day');
+        const $itemBar = document.getElementById('item-bar');
+        const $body = document.body;
+        const $gameOverScreen = document.getElementById('game-over-screen');
+        const $gameResult = document.getElementById('game-result');
+
+        // === 농작물 시각화 매핑 (Stage -> Emoji) ===
+        const CROP_VISUALS = [
+            '🕳️', // Stage 0: 빈 땅
+            '🕳️✨', // Stage 1: 땅 팜
+            '🌱', // Stage 2: 씨앗 심음 (새싹)
+            '🌼'  // Stage 3: 완성된 작물
+        ];
+
+        // === 함수 정의 ===
+
+        /**
+         * 도구를 선택하고 마우스 커서를 변경합니다.
+         * @param {string} toolName - 선택된 도구의 이름 ('shovel', 'seed' 등)
+         */
+        function selectTool(toolName) {
+            // 이전에 선택된 도구의 스타일 제거
+            if (selectedTool) {
+                const prevButton = $itemBar.querySelector(`.item-button[data-tool="${selectedTool}"]`);
+                if (prevButton) prevButton.classList.remove('selected');
+                $body.classList.remove(`cursor-${selectedTool}`);
+            }
+
+            selectedTool = toolName;
+
+            // 새롭게 선택된 도구의 스타일 적용
+            const newButton = $itemBar.querySelector(`.item-button[data-tool="${selectedTool}"]`);
+            if (newButton) newButton.classList.add('selected');
+            $body.classList.add(`cursor-${selectedName}`); // CSS 클래스 추가
+        }
+
+        /**
+         * 농작물에 도구를 적용합니다.
+         * @param {number} plotId - 상호작용할 농작물 슬롯 ID (1 또는 2)
+         */
+        function applyTool(plotId) {
+            if (!gameRunning || !selectedTool) return;
+
+            const plot = cropPlots[plotId - 1]; // 배열 인덱스는 0부터 시작
+
+            // 이미 완성되었거나 죽은 작물 처리
+            if (plot.completed) {
+                showMessage(plotId, "이미 완성된 작물입니다!");
+                return;
+            }
+            if (plot.isDead && selectedTool !== 'heal') {
+                showMessage(plotId, "죽은 작물입니다! 회복제로 살려주세요.");
+                return;
+            }
+
+            // 도구별 로직
+            switch (selectedTool) {
+                case 'shovel': // 모종삽: 빈 땅 -> 땅 팜
+                    if (plot.stage === 0) plot.stage = 1;
+                    break;
+                case 'seed': // 씨앗: 땅 팜 -> 씨앗 심음
+                    if (plot.stage === 1) plot.stage = 2;
+                    break;
+                case 'water': // 물조개: 물 주기
+                    if (plot.stage === 2 && plot.water < REQUIRED_WATER) plot.water++;
+                    break;
+                case 'scissor': // 가위: 잡초 제거
+                    if (plot.stage === 2 && plot.weed < REQUIRED_WEED) plot.weed++;
+                    break;
+                case 'medicine': // 해충약: 해충 제거
+                    if (plot.stage === 2 && plot.pest < REQUIRED_PEST) plot.pest++;
+                    break;
+                case 'heal': // 회복제: 죽은 작물 -> 빈 땅
+                    if (plot.isDead) {
+                        plot.isDead = false;
+                        plot.stage = 0;
+                        plot.water = 0;
+                        plot.weed = 0;
+                        plot.pest = 0;
+                        showMessage(plotId, "작물이 회복되었습니다!");
+                    }
+                    break;
+            }
+
+            checkCropCompletion(plot); // 작물 완성 여부 확인
+            updateUI(); // UI 업데이트
+        }
+
+        /**
+         * 농작물의 완성 여부를 확인합니다.
+         * @param {object} plot - 해당 농작물의 데이터 객체
+         */
+        function checkCropCompletion(plot) {
+            if (plot.stage === 2 &&
+                plot.water >= REQUIRED_WATER &&
+                plot.weed >= REQUIRED_WEED &&
+                plot.pest >= REQUIRED_PEST &&
+                !plot.isDead) {
+                plot.stage = 3; // 완성 단계
+                plot.completed = true;
+                showMessage(plot.id, "작물 완성!");
+            }
+        }
+
+        /**
+         * 게임 UI (타이머, 날짜, 농작물 상태)를 업데이트합니다.
+         */
+        function updateUI() {
+            $timeLeft.innerText = timeLeftInDay;
+            $currentDay.innerText = currentDay;
+
+            cropPlots.forEach(plot => {
+                const id = plot.id;
+                document.getElementById(`crop-visual-${id}`).innerText = CROP_VISUALS[plot.stage];
+                document.getElementById(`status-${id}`).innerText = plot.isDead ? "죽음🥀" :
+                                                                     plot.completed ? "완성!✨" :
+                                                                     plot.stage === 0 ? "빈 땅" :
+                                                                     plot.stage === 1 ? "땅 팜" :
+                                                                     "성장 중";
+                document.getElementById(`water-${id}`).innerText = plot.water;
+                document.getElementById(`weed-${id}`).innerText = plot.weed;
+                document.getElementById(`pest-${id}`).innerText = plot.pest;
+
+                // 죽은 작물은 특별한 비주얼로 표시
+                if (plot.isDead) {
+                    document.getElementById(`crop-visual-${id}`).innerText = '💀';
+                }
+            });
+        }
+
+        /**
+         * 특정 농작물에 경고 메시지를 표시합니다.
+         * @param {number} plotId - 농작물 ID
+         * @param {string} message - 표시할 메시지
+         */
+        function showMessage(plotId, message) {
+            const $warningDiv = document.getElementById(`warning-${plotId}`);
+            $warningDiv.innerText = message;
+            $warningDiv.style.display = 'block';
+            setTimeout(() => {
+                $warningDiv.style.display = 'none';
+            }, 1500); // 1.5초 후 사라짐
+        }
+
+        /**
+         * 자연재해 (해충/잡초)를 무작위로 발생시킵니다.
+         */
+        function triggerNaturalDisaster() {
+            // 이미 완성되었거나 죽은 작물에는 발생시키지 않음
+            const availablePlots = cropPlots.filter(p => !p.isDead && !p.completed);
+
+            if (availablePlots.length === 0) return;
+
+            const targetPlot = availablePlots[Math.floor(Math.random() * availablePlots.length)];
+            const disasterType = Math.random() > 0.5 ? 'pest' : 'weed';
+
+            if (disasterType === 'pest') {
+                targetPlot.pest = Math.min(targetPlot.pest + 1, REQUIRED_PEST); // 해충 증가
+                showMessage(targetPlot.id, "해충 발생! 🐛");
+            } else {
+                targetPlot.weed = Math.min(targetPlot.weed + 1, REQUIRED_WEED); // 잡초 증가
+                showMessage(targetPlot.id, "잡초 발생! 🌱");
+            }
+
+            // 일정 확률로 작물 사망 (규칙 8)
+            if (Math.random() < 0.2 && targetPlot.stage === 2) { // 성장 중인 작물만 죽음
+                targetPlot.isDead = true;
+                showMessage(targetPlot.id, "자연재해로 죽었습니다... 💀");
+            }
+
+            updateUI();
+        }
+
+        /**
+         * 게임 오버 화면을 표시하고 결과를 설정합니다.
+         * @param {boolean} success - 성공 여부
+         */
+        function gameOver(success) {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            $gameOverScreen.style.display = 'flex';
+            if (success) {
+                $gameResult.innerText = "성공! 🥳 모든 작물 재배 완료!";
+                $gameOverScreen.style.backgroundColor = 'rgba(40, 167, 69, 0.8)'; // 초록색 배경
+            } else {
+                $gameResult.innerText = "실패! 😥 다음 기회에...";
+                $gameOverScreen.style.backgroundColor = 'rgba(220, 53, 69, 0.8)'; // 빨간색 배경
+            }
+        }
+
+        /**
+         * 게임 초기화 및 시작 함수
+         */
+        function initGame() {
+            currentDay = 1;
+            timeLeftInDay = DAY_DURATION_SECONDS;
+            selectedTool = null;
+            gameRunning = true;
+
+            cropPlots.forEach(plot => {
+                plot.stage = 0;
+                plot.water = 0;
+                plot.weed = 0;
+                plot.pest = 0;
+                plot.isDead = false;
+                plot.completed = false;
+            });
+
+            updateUI();
+            $gameOverScreen.style.display = 'none';
+            $body.className = ''; // 모든 커서 클래스 제거
+
+            // 농작물 클릭 이벤트 리스너 추가
+            document.getElementById('plot-1').onclick = () => applyTool(1);
+            document.getElementById('plot-2').onclick = () => applyTool(2);
+
+            // 1초마다 게임 상태 업데이트
+            gameInterval = setInterval(() => {
+                if (!gameRunning) return;
+
+                timeLeftInDay--;
+                if (timeLeftInDay <= 0) {
+                    timeLeftInDay = DAY_DURATION_SECONDS;
+                    currentDay++;
+
+                    // 일정 확률로 자연재해 발생
+                    if (currentDay <= TOTAL_DAYS && Math.random() < 0.4) { // 하루가 바뀔 때 40% 확률로
+                        triggerNaturalDisaster();
+                    }
+                }
+
+                updateUI();
+
+                // 게임 종료 조건 확인
+                const allCompleted = cropPlots.every(plot => plot.completed);
+                if (currentDay > TOTAL_DAYS) {
+                    gameOver(allCompleted); // 30일 지나면 결과 확인
+                } else if (allCompleted && currentDay <= TOTAL_DAYS) {
+                    gameOver(true); // 30일 이전에 모두 완성 시 즉시 성공
+                }
+            }, 1000); // 1초마다 실행
+        }
+
+        // 게임 시작!
+        initGame();
+
+    </script>
+</body>
+</html>
